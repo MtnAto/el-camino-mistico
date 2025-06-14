@@ -11,6 +11,38 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from llama_cpp import Llama
 from difflib import SequenceMatcher
 
+from difflib import SequenceMatcher
+import requests
+
+def descargar_modelo_si_no_existe():
+    modelo_path = MODEL_DIR / "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
+    if modelo_path.exists():
+        print("[INFO] Modelo ya existe. No se descarga.")
+        return
+
+    print("[INFO] Descargando modelo desde Google Drive…")
+    url = "https://drive.google.com/uc?export=download&id=1kwCxE9g_TAyS-UEsm_kSaZA3Fdw1z66w"
+    response = requests.get(url, stream=True)
+
+    modelo_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(modelo_path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+
+    print("[INFO] Modelo descargado ✔")
+    
+MODEL_PATH = MODEL_DIR / "mistral-7b-instruct-v0.1.Q4_K_M.gguf"
+
+HISTORY_DIR.mkdir(exist_ok=True)
+
+# 👇 Esta es la única línea que necesitás agregar
+descargar_modelo_si_no_existe()
+
+print("[INFO] Cargando modelo…")
+LLM = Llama(model_path=str(MODEL_PATH), n_ctx=4096, n_gpu_layers=-1, n_threads=os.cpu_count() or 8)
+print("[INFO] Modelo cargado ✔")
+
 INDEX_HTML="""<!DOCTYPE html>
 <html lang='es'>
 <head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'>
